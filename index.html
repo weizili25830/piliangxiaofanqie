@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小番茄图片混淆处理工具 - 修复版</title>
+    <title>小番茄图片混淆批量处理工具</title>
     <style>
         * {
             box-sizing: border-box;
@@ -322,18 +322,6 @@
             font-size: 1rem;
         }
         
-        .debug-info {
-            background: #fff3cd;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-            border-left: 4px solid #ffc107;
-            font-family: monospace;
-            font-size: 0.9rem;
-            overflow: auto;
-            max-height: 200px;
-        }
-        
         @media (max-width: 768px) {
             .process-buttons {
                 flex-direction: column;
@@ -362,8 +350,8 @@
 <body>
     <div class="container">
         <header>
-            <h1>小番茄图片混淆处理工具 - 修复版</h1>
-            <p class="description">修复了图片损坏问题，优化了希尔伯特曲线算法</p>
+            <h1>小番茄图片混淆批量处理工具</h1>
+            <p class="description">基于空间填充曲线的新一代图片混淆 - 批量处理版</p>
         </header>
         
         <div class="main-content">
@@ -375,37 +363,6 @@
                 </label>
                 <input type="file" id="fileInput" class="file-input" accept="image/*" multiple>
                 <p id="selectedFiles">未选择文件</p>
-            </div>
-            
-            <div class="settings-panel">
-                <div class="settings-title">处理设置</div>
-                <div class="settings-group">
-                    <div class="setting-item">
-                        <label class="setting-label">最大同时处理数</label>
-                        <select id="concurrentProcesses" class="setting-input">
-                            <option value="1">1张（最稳定）</option>
-                            <option value="2">2张</option>
-                            <option value="3" selected>3张（推荐）</option>
-                            <option value="5">5张</option>
-                        </select>
-                    </div>
-                    <div class="setting-item">
-                        <label class="setting-label">处理质量</label>
-                        <select id="qualitySetting" class="setting-input">
-                            <option value="0.7">较低质量（0.7）</option>
-                            <option value="0.8">中等质量（0.8）</option>
-                            <option value="0.9" selected>高质量（0.9）</option>
-                            <option value="0.95">原网站质量（0.95）</option>
-                        </select>
-                    </div>
-                    <div class="setting-item">
-                        <label class="setting-label">调试模式</label>
-                        <select id="debugMode" class="setting-input">
-                            <option value="off">关闭</option>
-                            <option value="on">开启</option>
-                        </select>
-                    </div>
-                </div>
             </div>
             
             <div class="process-buttons">
@@ -422,244 +379,159 @@
                 <div class="progress-text" id="progressText">0 / 0 已完成</div>
             </div>
             
-            <div id="debugContainer" style="display: none;">
-                <div class="settings-title">调试信息</div>
-                <div class="debug-info" id="debugInfo"></div>
-            </div>
-            
             <div class="image-grid" id="imageGrid">
                 <!-- 图片预览将在这里动态生成 -->
             </div>
             
             <div class="info-box">
-                <div class="info-title">修复说明与功能</div>
+                <div class="info-title">工具功能说明</div>
                 <ul class="info-list">
-                    <li>修复了希尔伯特曲线算法中的像素映射错误</li>
-                    <li>优化了图片处理流程，避免像素数据损坏</li>
-                    <li>添加了调试模式，可查看处理过程中的详细信息</li>
-                    <li>改进了内存管理，避免处理大图片时崩溃</li>
-                    <li>支持批量处理任意数量的图片</li>
-                    <li>保持与原网站相同的算法和输出质量</li>
+                    <li>基于希尔伯特曲线空间填充算法进行像素位置变换</li>
+                    <li>保持像素的空间相关性，压缩后仍能保持色彩</li>
+                    <li>批量处理多张图片，支持同时混淆或解混淆</li>
+                    <li>处理后的图片格式为JPEG，质量0.95</li>
+                    <li>可视化处理进度和实时预览</li>
+                    <li>一键下载所有处理后的图片</li>
                 </ul>
-                <p>使用说明：上传图片后，根据需要调整处理设置，然后选择"批量混淆图片"或"批量解混淆图片"，处理完成后可以查看每张图片的效果，最后点击"下载所有图片"保存结果。</p>
+                <p>使用说明：上传图片后选择"批量混淆图片"或"批量解混淆图片"，处理完成后可以查看每张图片的效果，最后点击"下载所有图片"保存结果。</p>
             </div>
         </div>
         
         <footer>
-            <p>© 2023 小番茄图片混淆批量处理工具 - 修复版 | 基于希尔伯特曲线算法</p>
+            <p>© 2023 小番茄图片混淆批量处理工具 | 基于希尔伯特曲线算法</p>
         </footer>
     </div>
 
     <script>
-        // 修复版希尔伯特曲线生成函数
+        // 原代码中的希尔伯特曲线生成函数
         function gilbert2d(width, height) {
-            if (width <= 0 || height <= 0) return [];
-            
+            /**
+             * Generalized Hilbert ('gilbert') space-filling curve for arbitrary-sized
+             * 2D rectangular grids. Generates discrete 2D coordinates to fill a rectangle
+             * of size (width x height).
+             */
             const coordinates = [];
-            
-            // 使用迭代方法替代递归，避免堆栈溢出
-            const stack = [];
-            stack.push({x: 0, y: 0, ax: width, ay: 0, bx: 0, by: height});
-            
-            while (stack.length > 0) {
-                const {x, y, ax, ay, bx, by} = stack.pop();
-                
-                const w = Math.abs(ax + ay);
-                const h = Math.abs(bx + by);
-                
-                const dax = Math.sign(ax), day = Math.sign(ay);
-                const dbx = Math.sign(bx), dby = Math.sign(by);
-                
-                if (h === 1) {
-                    // 行填充
-                    for (let i = 0; i < w; i++) {
-                        coordinates.push([x + i * dax, y + i * day]);
-                    }
-                    continue;
-                }
-                
-                if (w === 1) {
-                    // 列填充
-                    for (let i = 0; i < h; i++) {
-                        coordinates.push([x + i * dbx, y + i * dby]);
-                    }
-                    continue;
-                }
-                
-                let ax2 = Math.floor(ax / 2), ay2 = Math.floor(ay / 2);
-                let bx2 = Math.floor(bx / 2), by2 = Math.floor(by / 2);
-                
-                const w2 = Math.abs(ax2 + ay2);
-                const h2 = Math.abs(bx2 + by2);
-                
-                if (2 * w > 3 * h) {
-                    if ((w2 % 2) && (w > 2)) {
-                        ax2 += dax;
-                        ay2 += day;
-                    }
-                    
-                    // 长情况：分成两部分
-                    stack.push({x: x + ax2, y: y + ay2, ax: ax - ax2, ay: ay - ay2, bx, by});
-                    stack.push({x, y, ax: ax2, ay: ay2, bx, by});
-                } else {
-                    if ((h2 % 2) && (h > 2)) {
-                        bx2 += dbx;
-                        by2 += dby;
-                    }
-                    
-                    // 标准情况：一步上，一步长水平，一步下
-                    stack.push({
-                        x: x + (ax - dax) + (bx2 - dbx), 
-                        y: y + (ay - day) + (by2 - dby),
-                        ax: -bx2, ay: -by2, 
-                        bx: -(ax - ax2), by: -(ay - ay2)
-                    });
-                    stack.push({x: x + bx2, y: y + by2, ax, ay, bx: bx - bx2, by: by - by2});
-                    stack.push({x, y, ax: bx2, ay: by2, bx: ax2, by: ay2});
-                }
+
+            if (width >= height) {
+                generate2d(0, 0, width, 0, 0, height, coordinates);
+            } else {
+                generate2d(0, 0, 0, height, width, 0, coordinates);
             }
-            
+
             return coordinates;
         }
-        
-        // 验证希尔伯特曲线
-        function validateGilbertCurve(curve, width, height) {
-            if (curve.length !== width * height) {
-                console.warn(`希尔伯特曲线点数不匹配: 期望 ${width * height}, 实际 ${curve.length}`);
-                return false;
-            }
-            
-            // 检查所有点是否在图像范围内
-            for (const [x, y] of curve) {
-                if (x < 0 || x >= width || y < 0 || y >= height) {
-                    console.warn(`希尔伯特曲线点超出范围: [${x}, ${y}]`);
-                    return false;
+
+        function generate2d(x, y, ax, ay, bx, by, coordinates) {
+            const w = Math.abs(ax + ay);
+            const h = Math.abs(bx + by);
+
+            const dax = Math.sign(ax), day = Math.sign(ay); // unit major direction
+            const dbx = Math.sign(bx), dby = Math.sign(by); // unit orthogonal direction
+
+            if (h === 1) {
+                // trivial row fill
+                for (let i = 0; i < w; i++) {
+                    coordinates.push([x, y]);
+                    x += dax;
+                    y += day;
                 }
+                return;
             }
-            
-            // 检查是否有重复点
-            const pointSet = new Set();
-            for (const [x, y] of curve) {
-                const key = `${x},${y}`;
-                if (pointSet.has(key)) {
-                    console.warn(`希尔伯特曲线有重复点: [${x}, ${y}]`);
-                    return false;
+
+            if (w === 1) {
+                // trivial column fill
+                for (let i = 0; i < h; i++) {
+                    coordinates.push([x, y]);
+                    x += dbx;
+                    y += dby;
                 }
-                pointSet.add(key);
+                return;
             }
-            
-            return true;
+
+            let ax2 = Math.floor(ax / 2), ay2 = Math.floor(ay / 2);
+            let bx2 = Math.floor(bx / 2), by2 = Math.floor(by / 2);
+
+            const w2 = Math.abs(ax2 + ay2);
+            const h2 = Math.abs(bx2 + by2);
+
+            if (2 * w > 3 * h) {
+                if ((w2 % 2) && (w > 2)) {
+                    // prefer even steps
+                    ax2 += dax;
+                    ay2 += day;
+                }
+
+                // long case: split in two parts only
+                generate2d(x, y, ax2, ay2, bx, by, coordinates);
+                generate2d(x + ax2, y + ay2, ax - ax2, ay - ay2, bx, by, coordinates);
+
+            } else {
+                if ((h2 % 2) && (h > 2)) {
+                    // prefer even steps
+                    bx2 += dbx;
+                    by2 += dby;
+                }
+
+                // standard case: one step up, one long horizontal, one step down
+                generate2d(x, y, bx2, by2, ax2, ay2, coordinates);
+                generate2d(x + bx2, y + by2, ax, ay, bx - bx2, by - by2, coordinates);
+                generate2d(x + (ax - dax) + (bx2 - dbx), y + (ay - day) + (by2 - dby),
+                    -bx2, -by2, -(ax - ax2), -(ay - ay2), coordinates);
+            }
         }
-        
-        // 图片处理函数
-        function processImage(img, mode, quality, debug = false) {
-            return new Promise((resolve, reject) => {
-                try {
-                    const startTime = performance.now();
-                    const width = img.width;
-                    const height = img.height;
-                    
-                    if (debug) {
-                        addDebugInfo(`开始处理图片: ${width}x${height}, 模式: ${mode}`);
-                    }
-                    
-                    const canvas = document.createElement("canvas");
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext("2d");
-                    ctx.drawImage(img, 0, 0);
-                    const imgData = ctx.getImageData(0, 0, width, height);
-                    const imgData2 = new ImageData(width, height);
-                    
-                    // 生成希尔伯特曲线
-                    const curveStart = performance.now();
-                    const curve = gilbert2d(width, height);
-                    const curveTime = performance.now() - curveStart;
-                    
-                    if (debug) {
-                        addDebugInfo(`生成希尔伯特曲线: ${curve.length} 点, 耗时: ${curveTime.toFixed(2)}ms`);
-                    }
-                    
-                    // 验证曲线
-                    if (!validateGilbertCurve(curve, width, height)) {
-                        if (debug) {
-                            addDebugInfo("希尔伯特曲线验证失败，使用行扫描");
-                        }
-                        // 使用简单的行扫描作为后备
-                        for (let y = 0; y < height; y++) {
-                            for (let x = 0; x < width; x++) {
-                                curve[y * width + x] = [x, y];
-                            }
-                        }
-                    }
-                    
-                    const offset = Math.round((Math.sqrt(5) - 1) / 2 * width * height) % (width * height);
-                    
-                    if (debug) {
-                        addDebugInfo(`使用偏移量: ${offset}`);
-                    }
-                    
-                    // 处理像素
-                    const processStart = performance.now();
-                    const data = imgData.data;
-                    const newData = imgData2.data;
-                    
-                    if (mode === 'encrypt') {
-                        // 加密：将原图当前位置的像素放到新图的偏移位置
-                        for (let i = 0; i < width * height; i++) {
-                            const oldPos = curve[i];
-                            const newPos = curve[(i + offset) % (width * height)];
-                            
-                            const oldIndex = (oldPos[1] * width + oldPos[0]) * 4;
-                            const newIndex = (newPos[1] * width + newPos[0]) * 4;
-                            
-                            newData[newIndex] = data[oldIndex];
-                            newData[newIndex + 1] = data[oldIndex + 1];
-                            newData[newIndex + 2] = data[oldIndex + 2];
-                            newData[newIndex + 3] = data[oldIndex + 3];
-                        }
-                    } else {
-                        // 解密：将加密图偏移位置的像素放回原图的位置
-                        for (let i = 0; i < width * height; i++) {
-                            const oldPos = curve[i];
-                            const newPos = curve[(i + offset) % (width * height)];
-                            
-                            const oldIndex = (oldPos[1] * width + oldPos[0]) * 4;
-                            const newIndex = (newPos[1] * width + newPos[0]) * 4;
-                            
-                            newData[oldIndex] = data[newIndex];
-                            newData[oldIndex + 1] = data[newIndex + 1];
-                            newData[oldIndex + 2] = data[newIndex + 2];
-                            newData[oldIndex + 3] = data[newIndex + 3];
-                        }
-                    }
-                    
-                    const processTime = performance.now() - processStart;
-                    
-                    if (debug) {
-                        addDebugInfo(`像素处理完成, 耗时: ${processTime.toFixed(2)}ms`);
-                    }
-                    
-                    ctx.putImageData(imgData2, 0, 0);
-                    
-                    canvas.toBlob(blob => {
-                        const totalTime = performance.now() - startTime;
-                        if (debug) {
-                            addDebugInfo(`图片处理完成, 总耗时: ${totalTime.toFixed(2)}ms`);
-                        }
-                        resolve(URL.createObjectURL(blob));
-                    }, "image/jpeg", quality);
-                    
-                } catch (error) {
-                    console.error("处理图片时出错:", error);
-                    if (debug) {
-                        addDebugInfo(`处理出错: ${error.message}`);
-                    }
-                    reject(error);
+
+        // 原代码中的加密函数
+        function encrypt(img) {
+            return new Promise((resolve) => {
+                const cvs = document.createElement("canvas");
+                const width = cvs.width = img.width;
+                const height = cvs.height = img.height;
+                const ctx = cvs.getContext("2d");
+                ctx.drawImage(img, 0, 0);
+                const imgdata = ctx.getImageData(0, 0, width, height);
+                const imgdata2 = new ImageData(width, height);
+                const curve = gilbert2d(width, height);
+                const offset = Math.round((Math.sqrt(5) - 1) / 2 * width * height);
+                for(let i = 0; i < width * height; i++){
+                    const old_pos = curve[i];
+                    const new_pos = curve[(i + offset) % (width * height)];
+                    const old_p = 4 * (old_pos[0] + old_pos[1] * width);
+                    const new_p = 4 * (new_pos[0] + new_pos[1] * width);
+                    imgdata2.data.set(imgdata.data.slice(old_p, old_p + 4), new_p);
                 }
+                ctx.putImageData(imgdata2, 0, 0);
+                cvs.toBlob(b => {
+                    resolve(URL.createObjectURL(b));
+                }, "image/jpeg", 0.95);
             });
         }
-        
+
+        // 原代码中的解密函数
+        function decrypt(img) {
+            return new Promise((resolve) => {
+                const cvs = document.createElement("canvas");
+                const width = cvs.width = img.width;
+                const height = cvs.height = img.height;
+                const ctx = cvs.getContext("2d");
+                ctx.drawImage(img, 0, 0);
+                const imgdata = ctx.getImageData(0, 0, width, height);
+                const imgdata2 = new ImageData(width, height);
+                const curve = gilbert2d(width, height);
+                const offset = Math.round((Math.sqrt(5) - 1) / 2 * width * height);
+                for(let i = 0; i < width * height; i++){
+                    const old_pos = curve[i];
+                    const new_pos = curve[(i + offset) % (width * height)];
+                    const old_p = 4 * (old_pos[0] + old_pos[1] * width);
+                    const new_p = 4 * (new_pos[0] + new_pos[1] * width);
+                    imgdata2.data.set(imgdata.data.slice(new_p, new_p + 4), old_p);
+                }
+                ctx.putImageData(imgdata2, 0, 0);
+                cvs.toBlob(b => {
+                    resolve(URL.createObjectURL(b));
+                }, "image/jpeg", 0.95);
+            });
+        }
+
         // DOM元素引用
         const fileInput = document.getElementById('fileInput');
         const encryptBtn = document.getElementById('encryptBtn');
@@ -669,24 +541,12 @@
         const progressFill = document.getElementById('progressFill');
         const progressText = document.getElementById('progressText');
         const imageGrid = document.getElementById('imageGrid');
-        const concurrentProcesses = document.getElementById('concurrentProcesses');
-        const qualitySetting = document.getElementById('qualitySetting');
-        const debugMode = document.getElementById('debugMode');
-        const debugContainer = document.getElementById('debugContainer');
-        const debugInfo = document.getElementById('debugInfo');
         
         // 存储上传的图片和处理结果
         let uploadedImages = [];
         let processedImages = [];
         let currentlyProcessing = 0;
-        let maxConcurrent = 3;
-        
-        // 添加调试信息
-        function addDebugInfo(message) {
-            const timestamp = new Date().toLocaleTimeString();
-            debugInfo.innerHTML += `[${timestamp}] ${message}<br>`;
-            debugInfo.scrollTop = debugInfo.scrollHeight;
-        }
+        const maxConcurrent = 3; // 最大同时处理数
         
         // 文件选择事件
         fileInput.addEventListener('change', function(e) {
@@ -699,13 +559,6 @@
                 uploadedImages = [];
                 processedImages = [];
                 imageGrid.innerHTML = '';
-                
-                // 显示/隐藏调试面板
-                debugContainer.style.display = debugMode.value === 'on' ? 'block' : 'none';
-                if (debugMode.value === 'on') {
-                    debugInfo.innerHTML = '';
-                    addDebugInfo(`已选择 ${e.target.files.length} 个文件`);
-                }
                 
                 // 处理每个文件
                 Array.from(e.target.files).forEach((file, index) => {
@@ -732,37 +585,11 @@
                                 <div class="image-status" data-index="${index}">等待处理</div>
                             `;
                             imageGrid.appendChild(imageItem);
-                            
-                            if (debugMode.value === 'on') {
-                                addDebugInfo(`加载图片: ${file.name}, 尺寸: ${img.width}x${img.height}`);
-                            }
-                        };
-                        img.onerror = function() {
-                            console.error(`加载图片失败: ${file.name}`);
-                            if (debugMode.value === 'on') {
-                                addDebugInfo(`加载图片失败: ${file.name}`);
-                            }
                         };
                         img.src = e.target.result;
                     };
                     reader.readAsDataURL(file);
                 });
-            }
-        });
-        
-        // 更新并发处理数
-        concurrentProcesses.addEventListener('change', function() {
-            maxConcurrent = parseInt(this.value);
-            if (debugMode.value === 'on') {
-                addDebugInfo(`设置最大并发数: ${maxConcurrent}`);
-            }
-        });
-        
-        // 调试模式切换
-        debugMode.addEventListener('change', function() {
-            debugContainer.style.display = this.value === 'on' ? 'block' : 'none';
-            if (this.value === 'on' && uploadedImages.length > 0) {
-                addDebugInfo(`已选择 ${uploadedImages.length} 个文件`);
             }
         });
         
@@ -782,14 +609,6 @@
             progressFill.style.width = '0%';
             progressText.textContent = `0 / ${total} 已完成`;
             
-            // 获取质量设置
-            const quality = parseFloat(qualitySetting.value);
-            const debug = debugMode.value === 'on';
-            
-            if (debug) {
-                addDebugInfo(`开始批量处理: 模式=${mode}, 质量=${quality}, 并发数=${maxConcurrent}`);
-            }
-            
             // 处理函数
             const processNextImage = async () => {
                 if (completed >= total) return;
@@ -806,13 +625,10 @@
                 
                 currentlyProcessing++;
                 
-                if (debug) {
-                    addDebugInfo(`开始处理: ${uploadedImages[nextIndex].name}`);
-                }
-                
                 try {
                     const imageData = uploadedImages[nextIndex];
-                    const processedUrl = await processImage(imageData.image, mode, quality, debug);
+                    const processFunc = mode === 'encrypt' ? encrypt : decrypt;
+                    const processedUrl = await processFunc(imageData.image);
                     
                     processedImages.push({
                         index: nextIndex,
@@ -827,19 +643,11 @@
                     statusElement.style.color = '#2ecc71';
                     uploadedImages[nextIndex].status = 'completed';
                     
-                    if (debug) {
-                        addDebugInfo(`处理完成: ${imageData.name}`);
-                    }
-                    
                 } catch (error) {
                     statusElement.textContent = '处理失败';
                     statusElement.style.color = '#e74c3c';
                     console.error(`处理图片 ${uploadedImages[nextIndex].name} 时出错:`, error);
                     uploadedImages[nextIndex].status = 'failed';
-                    
-                    if (debug) {
-                        addDebugInfo(`处理失败: ${uploadedImages[nextIndex].name}, 错误: ${error.message}`);
-                    }
                 }
                 
                 completed++;
@@ -857,9 +665,6 @@
                 // 如果所有图片都处理完成，启用下载按钮
                 if (completed === total) {
                     downloadBtn.disabled = false;
-                    if (debug) {
-                        addDebugInfo(`批量处理完成: ${completed} / ${total}`);
-                    }
                 }
             };
             
@@ -877,12 +682,6 @@
         downloadBtn.addEventListener('click', async function() {
             if (processedImages.length === 0) return;
             
-            const debug = debugMode.value === 'on';
-            
-            if (debug) {
-                addDebugInfo(`开始下载 ${processedImages.length} 张图片`);
-            }
-            
             for (let i = 0; i < processedImages.length; i++) {
                 const imageData = processedImages[i];
                 
@@ -894,7 +693,7 @@
                     // 创建下载链接
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(blob);
-                    a.download = `${mode === 'encrypt' ? 'encrypted_' : 'decrypted_'}${imageData.name.replace(/\.[^/.]+$/, "")}.jpg`;
+                    a.download = `${imageData.name.replace(/\.[^/.]+$/, "")}_processed.jpg`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -904,27 +703,15 @@
                     statusElement.textContent = '已下载';
                     statusElement.style.color = '#3498db';
                     
-                    if (debug) {
-                        addDebugInfo(`已下载: ${imageData.name}`);
-                    }
-                    
                 } catch (error) {
                     console.error(`下载图片 ${imageData.name} 时出错:`, error);
                     const statusElement = document.querySelector(`.image-status[data-index="${imageData.index}"]`);
                     statusElement.textContent = '下载失败';
                     statusElement.style.color = '#e74c3c';
-                    
-                    if (debug) {
-                        addDebugInfo(`下载失败: ${imageData.name}, 错误: ${error.message}`);
-                    }
                 }
                 
                 // 添加一点延迟，避免同时发起太多下载请求
                 await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            
-            if (debug) {
-                addDebugInfo(`下载完成`);
             }
         });
     </script>
